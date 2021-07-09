@@ -10,7 +10,9 @@ const CREATEDBSQL = "create database if not exists `autodoc`;"
 //     mysqlPromise
 // } = require('./mysql')
 const crypto = require('crypto');
-
+const fs = require('fs')
+const schedule = require('node-schedule');
+const path = require('path')
 const fetch = require('node-fetch');
 const {
     prodDatabase,
@@ -26,11 +28,6 @@ const opts = {
     dateFormat:'YYYY-MM-DD'
 };
 const logger = require('simple-node-logger').createRollingFileLogger( opts );
-const fs = require('fs')
-const path = require('path')
-
-const schedule = require('node-schedule');
-
 let scheduleJobs = []
 let oldAccessTokenTime = undefined;
 let tmpSignatureObj = undefined;
