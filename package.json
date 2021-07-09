@@ -15,9 +15,9 @@
     "cross-env": "*",
     "express": "*",
     "node-fetch": "^2.6.1",
-    "node-logger": "*",
     "node-schedule": "*",
-    "qrcode": "^1.4.4"
+    "qrcode": "^1.4.4",
+    "simple-node-logger": "^18.12.24"
   },
   "license": "ISC"
 }

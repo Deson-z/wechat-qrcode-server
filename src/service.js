@@ -17,14 +17,21 @@ const {
     localDatabase,
     wsConfigs
 } = require('../configs')
-const nodelogger = require('node-logger')
+const LOGFOLDER = 'logs'
+const opts = {
+    timestampFormat:'YYYY-MM-DD HH:mm:ss.SSS',
+    errorEventName:'error',
+    logDirectory: path.resolve(LOGFOLDER), // NOTE: folder must exist and be writable...
+    fileNamePattern:'<DATE>.log',
+    dateFormat:'YYYY-MM-DD'
+};
+const logger = require('simple-node-logger').createRollingFileLogger( opts );
 const fs = require('fs')
 const path = require('path')
 
 const schedule = require('node-schedule');
 
 let scheduleJobs = []
-let logger = undefined;
 let oldAccessTokenTime = undefined;
 let tmpSignatureObj = undefined;
 
@@ -35,9 +42,6 @@ const initAction = async function() {
     if (!fs.existsSync(path.resolve('logs'))) {
         fs.mkdirSync(path.resolve('logs'))
     }
-    schedule.scheduleJob('0 * * * * *', function(){
-        logger = nodelogger.createLogger(`logs/${new Date().format('yyyy-MM-dd')}.log`);
-    })
     
     // console.log('连接数据库')
     //     const _dbset = ENV === 'production' ? prodDatabase : localDatabase
@@ -76,7 +80,6 @@ function sleep(time=5000) {
 function generateSign(params) {
     return new Promise(async resolve => {
         const {url} = params
-        console.log(url)
         if (!url) {
             resolve({
                 success: false,
@@ -100,6 +103,8 @@ function generateSign(params) {
                 const _signature = createKey(`jsapi_ticket=${_res2.ticket}&noncestr=${_noncestr}&timestamp=${_timestamp}&url=${url}`)
                 tmpSignatureObj = {
                     ...wsConfigs,
+                    url: url,
+                    ticket: _res2.ticket,
                     timestamp: _timestamp,
                     noncestr: _noncestr,
                     signature: _signature
@@ -109,16 +114,20 @@ function generateSign(params) {
                     data: tmpSignatureObj
                 })
             } else {
+                logger.info(JSON.stringify(_res2))
                 resolve(_res2)
             }
         } else {
+            logger.info(JSON.stringify(_res1))
             resolve(_res1)
         }
     })
 }
 
-function generateQrcode(params) {
-    
+function verifyWxConfig(params) {
+    return new Promise(resolve => {
+        resolve(params.echostr)
+    })
 }
 
 exports = module.exports = {
@@ -127,5 +136,5 @@ exports = module.exports = {
     getRandomIntInclusive,
     sleep,
     generateSign,
-    generateQrcode
+    verifyWxConfig
 }

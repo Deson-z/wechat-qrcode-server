@@ -1,7 +1,7 @@
 const ENV = process.env.NODE_ENV;
 const {
     generateSign,
-    generateQrcode,
+    verifyWxConfig,
 } = require('./service')
 
 async function getSignatureCtl(req, res) {
@@ -9,11 +9,12 @@ async function getSignatureCtl(req, res) {
     res.send(_result)
 }
 
-async function getQrcodeCtl(req, res) {
-    const _result  = await generateQrcode(req.body)
+async function verifyWxConfigCtl(req, res) {
+    const _result  = await verifyWxConfig(req.query)
+    res.set('Content-Type', 'text/plain');
     res.send(_result)
 }
 exports = module.exports = {
     getSignatureCtl,
-    getQrcodeCtl
+    verifyWxConfigCtl
 }

@@ -37,7 +37,7 @@ const {
 } = require('./configs')
 const {
     getSignatureCtl,
-    getQrcodeCtl
+    verifyWxConfigCtl
 } = require('./src/controller')
 const {
     initAction
@@ -47,6 +47,6 @@ const PROJECTNAME = '/wechat-qrcode'
 initAction();
 
 app.post(`${PROJECTNAME}/getSignature`, getSignatureCtl)
-app.post(`${PROJECTNAME}/getQrcode`, getQrcodeCtl)
+app.get(`${PROJECTNAME}/verifyWxConfig`, verifyWxConfigCtl)
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))

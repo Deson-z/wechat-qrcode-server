@@ -17,7 +17,7 @@ exports = module.exports = {
   port: 4646,
   wsConfigs: {
     grant_type: "client_credential",
-    appid: "wx10c32b38d3f414bb",
-    secret: "d83941ef147b15319581de70574c12be",
+    appid: "wx6bc5dd0a21e6908d",
+    secret: "9631afe2fd59b02a05be1fa3f976e80b",
   }
 }
