@@ -14,10 +14,16 @@ exports = module.exports = {
     database : '',
     port : 3306
   },
-  port: 4646,
+  port: 4646, // prod
+  // port: 8080, // test
   wsConfigs: {
     grant_type: "client_credential",
-    appid: "wx10c32b38d3f414bb",
-    secret: "d83941ef147b15319581de70574c12be",
+    appid: "wx6bc5dd0a21e6908d", // prod
+    secret: "9631afe2fd59b02a05be1fa3f976e80b", // prod
+    // appid: "wx9c4366c3f03742d6", // test
+    // secret: "85084c4341575bf69bf31bc873ba4f24", // test
+  },
+  verifyToken:{
+    token:"dison0727"
   }
 }

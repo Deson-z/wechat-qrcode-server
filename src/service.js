@@ -9,36 +9,38 @@ const CREATEDBSQL = "create database if not exists `autodoc`;"
 //     queryPromise,
 //     mysqlPromise
 // } = require('./mysql')
-const crypto = require('crypto');
-
+const crypto = require('crypto');
+const fs = require('fs')
+const schedule = require('node-schedule');
+const path = require('path')
 const fetch = require('node-fetch');
 const {
     prodDatabase,
     localDatabase,
-    wsConfigs
+    wsConfigs,
+    verifyToken
 } = require('../configs')
-const nodelogger = require('node-logger')
-const fs = require('fs')
-const path = require('path')
-
-const schedule = require('node-schedule');
-
+const LOGFOLDER = 'logs'
+const opts = {
+    timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS',
+    errorEventName: 'error',
+    logDirectory: path.resolve(LOGFOLDER), // NOTE: folder must exist and be writable...
+    fileNamePattern: '<DATE>.log',
+    dateFormat: 'YYYY-MM-DD'
+};
+const logger = require('simple-node-logger').createRollingFileLogger(opts);
 let scheduleJobs = []
-let logger = undefined;
 let oldAccessTokenTime = undefined;
 let tmpSignatureObj = undefined;
 
 function createKey(strval) {
-    return crypto.createHash('sha1').update(strval).digest('hex')
+    return crypto.createHash('sha1').update(strval).digest('hex')
 }
-const initAction = async function() {
+const initAction = async function () {
     if (!fs.existsSync(path.resolve('logs'))) {
         fs.mkdirSync(path.resolve('logs'))
     }
-    schedule.scheduleJob('0 * * * * *', function(){
-        logger = nodelogger.createLogger(`logs/${new Date().format('yyyy-MM-dd')}.log`);
-    })
-    
+
     // console.log('连接数据库')
     //     const _dbset = ENV === 'production' ? prodDatabase : localDatabase
     //     const _fdbset = {
@@ -65,9 +67,9 @@ function getRandomIntInclusive(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
-function sleep(time=5000) {
+function sleep(time = 5000) {
     return new Promise(resolve => {
-        setTimeout(()=>{
+        setTimeout(() => {
             resolve()
         }, time)
     })
@@ -75,8 +77,9 @@ function sleep(time=5000) {
 
 function generateSign(params) {
     return new Promise(async resolve => {
-        const {url} = params
-        console.log(url)
+        const {
+            url
+        } = params
         if (!url) {
             resolve({
                 success: false,
@@ -84,22 +87,28 @@ function generateSign(params) {
             })
         }
         const _ctime = new Date().getTime()
-        if (oldAccessTokenTime && (_ctime - oldAccessTokenTime) < 7200*1000 && tmpSignatureObj) {
+        if (oldAccessTokenTime && (_ctime - oldAccessTokenTime) < 7200 * 1000 && tmpSignatureObj) {
             resolve({
                 success: true,
                 data: tmpSignatureObj
             })
         }
-        const _res1 = await fetch(`https://api.weixin.qq.com/cgi-bin/token?grant_type=${wsConfigs.grant_type}&appid=${wsConfigs.appid}&secret=${wsConfigs.secret}`, { method: 'GET' }).then(res=>res.json())
+        const _res1 = await fetch(`https://api.weixin.qq.com/cgi-bin/token?grant_type=${wsConfigs.grant_type}&appid=${wsConfigs.appid}&secret=${wsConfigs.secret}`, {
+            method: 'GET'
+        }).then(res => res.json())
         if (_res1.access_token) {
             oldAccessTokenTime = new Date().getTime()
-            const _res2 = await fetch(`https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=${_res1.access_token}&type=jsapi`, { method: 'GET' }).then(res=>res.json())
+            const _res2 = await fetch(`https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=${_res1.access_token}&type=jsapi`, {
+                method: 'GET'
+            }).then(res => res.json())
             if (_res2.ticket) {
-                const _timestamp = Math.floor(new Date().getTime()/1000)
+                const _timestamp = Math.floor(new Date().getTime() / 1000)
                 const _noncestr = Math.random().toString(36).substr(2, 15);
                 const _signature = createKey(`jsapi_ticket=${_res2.ticket}&noncestr=${_noncestr}&timestamp=${_timestamp}&url=${url}`)
                 tmpSignatureObj = {
                     ...wsConfigs,
+                    url: url,
+                    ticket: _res2.ticket,
                     timestamp: _timestamp,
                     noncestr: _noncestr,
                     signature: _signature
@@ -109,16 +118,33 @@ function generateSign(params) {
                     data: tmpSignatureObj
                 })
             } else {
+                logger.info(JSON.stringify(_res2))
                 resolve(_res2)
             }
         } else {
+            logger.info(JSON.stringify(_res1))
             resolve(_res1)
         }
     })
 }
 
-function generateQrcode(params) {
-    
+function verifyWxConfig(params) {
+    return new Promise(resolve => {
+        console.log(params);
+        const _token = verifyToken.token
+        const _nonce = params.nonce
+        const _timestamp = params.timestamp
+        const tempArr = new Array(_token, _nonce, _timestamp)
+        const dictSortToStr = tempArr.sort().toString()
+        const verifysSgnature = createKey(dictSortToStr.replace(/,/g, ""))
+        console.log(verifysSgnature);
+        console.log(params.signature);
+        if (params && params.echostr && verifysSgnature === params.signature) {
+            resolve(params.echostr)
+        } else {
+            resolve(false)
+        }
+    })
 }
 
 exports = module.exports = {
@@ -127,5 +153,5 @@ exports = module.exports = {
     getRandomIntInclusive,
     sleep,
     generateSign,
-    generateQrcode
+    verifyWxConfig
 }

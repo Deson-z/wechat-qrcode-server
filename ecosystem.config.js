@@ -1,7 +1,7 @@
 module.exports = {
   apps : [
       {
-        name: "app",
+        name: "wechat-qrcode-server",
         script: "./app.js",
         watch: false,
         env: {
@@ -10,7 +10,7 @@ module.exports = {
         env_production: {
           NODE_ENV: "production",
         },
-	      autorestart: false
+	      autorestart: true
       }
   ]
 }
